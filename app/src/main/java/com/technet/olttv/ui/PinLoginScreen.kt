@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -73,7 +74,9 @@ fun PinLoginScreen(
                 ) {
                     Text(
                         text = "OLT TV Monitor",
-                        modifier = Modifier.align(Alignment.CenterStart).padding(24.dp),
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .padding(24.dp),
                         color = Color.White,
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Black
@@ -124,7 +127,9 @@ fun PinLoginScreen(
 
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(3),
-                    modifier = Modifier.height(320.dp).width(420.dp),
+                    modifier = Modifier
+                        .height(320.dp)
+                        .width(420.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(4.dp)
@@ -156,7 +161,9 @@ fun PinLoginScreen(
 
                 Button(
                     onClick = { viewModel.submit() },
-                    modifier = Modifier.width(280.dp).focusable()
+                    modifier = Modifier
+                        .width(280.dp)
+                        .focusable()
                 ) {
                     Text("Entrar")
                 }
