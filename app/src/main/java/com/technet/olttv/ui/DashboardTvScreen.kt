@@ -6,12 +6,12 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -41,14 +42,23 @@ import com.technet.olttv.data.model.TopPonItem
 
 @Composable
 fun DashboardTvScreen(
-    viewModel: DashboardViewModel
+    viewModel: DashboardViewModel,
+    onLogout: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF07111F))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF07111F),
+                        Color(0xFF09182C),
+                        Color(0xFF07111F)
+                    )
+                )
+            )
             .padding(20.dp)
     ) {
         when {
@@ -84,7 +94,8 @@ fun DashboardTvScreen(
                         data = data,
                         lastUpdateLabel = state.lastUpdateLabel,
                         errorMessage = state.errorMessage,
-                        onRefresh = { viewModel.manualRefresh() }
+                        onRefresh = { viewModel.manualRefresh() },
+                        onLogout = onLogout
                     )
                 }
             }
@@ -97,18 +108,21 @@ private fun DashboardContent(
     data: DashboardResponse,
     lastUpdateLabel: String,
     errorMessage: String?,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onLogout: () -> Unit
 ) {
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxSize()
+        verticalArrangement = Arrangement.spacedBy(18.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 18.dp)
     ) {
         item {
             HeaderSection(
-                title = "OLT TV Monitor V1",
-                subtitle = "Painel nativo Android TV com top RX, eventos, ranking por OLT/PON e resumo geral.",
+                title = "OLT TV Monitor V1.1 PRO",
+                subtitle = "Painel nativo Android TV com proteção por PIN, top RX, eventos, ranking por OLT/PON e status operacional.",
                 lastUpdateLabel = lastUpdateLabel,
-                onRefresh = onRefresh
+                onRefresh = onRefresh,
+                onLogout = onLogout
             )
         }
 
@@ -126,21 +140,11 @@ private fun DashboardContent(
             }
         }
 
-        item {
-            SectionTitle("Top ONUs com RX alterado ou crítico")
-        }
+        item { SectionTitle("Top ONUs com RX alterado ou crítico") }
+        item { RxSection(items = data.topRx) }
 
-        item {
-            RxSection(items = data.topRx)
-        }
-
-        item {
-            SectionTitle("Últimos eventos")
-        }
-
-        item {
-            EventsSection(items = data.latestEvents)
-        }
+        item { SectionTitle("Últimos eventos") }
+        item { EventsSection(items = data.latestEvents) }
 
         item {
             Row(
@@ -171,7 +175,7 @@ private fun DashboardContent(
         }
 
         item {
-            Spacer(modifier = Modifier.height(12.dp))
+            FooterSection(lastUpdateLabel = lastUpdateLabel)
         }
     }
 }
@@ -181,43 +185,63 @@ private fun HeaderSection(
     title: String,
     subtitle: String,
     lastUpdateLabel: String,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onLogout: () -> Unit
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color(0xFF0D1B2E)),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(28.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(Color(0xFF1D4ED8), Color(0xFF06B6D4))
+                        )
+                    )
+            ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.headlineLarge,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 18.dp),
+                    style = MaterialTheme.typography.headlineMedium,
                     color = Color.White,
                     fontWeight = FontWeight.Black
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = subtitle,
-                    color = Color(0xFFBFD8FF)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "Última atualização: $lastUpdateLabel",
-                    color = Color(0xFF94A3B8)
-                )
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(22.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = subtitle,
+                        color = Color(0xFFBFD8FF)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Última atualização: $lastUpdateLabel",
+                        color = Color(0xFF94A3B8),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
-            Button(onClick = onRefresh, modifier = Modifier.focusable()) {
-                Text("Atualizar")
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(onClick = onRefresh, modifier = Modifier.focusable()) {
+                        Text("Atualizar")
+                    }
+                    Button(onClick = onLogout, modifier = Modifier.focusable()) {
+                        Text("Sair")
+                    }
+                }
             }
         }
     }
@@ -225,13 +249,13 @@ private fun HeaderSection(
 
 @Composable
 private fun SummarySection(data: DashboardResponse) {
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { SummaryCard("Total ONUs", data.summary.totalOnus.toString(), Color(0xFF1E293B)) }
-        item { SummaryCard("Online", data.summary.online.toString(), Color(0xFF14532D)) }
-        item { SummaryCard("Offline", data.summary.offline.toString(), Color(0xFF7F1D1D)) }
-        item { SummaryCard("Candidatas", data.summary.candidates.toString(), Color(0xFF78350F)) }
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        item { SummaryCard("Total ONUs", data.summary.totalOnus.toString(), Color(0xFF1E3A8A)) }
+        item { SummaryCard("Online", data.summary.online.toString(), Color(0xFF16A34A)) }
+        item { SummaryCard("Offline", data.summary.offline.toString(), Color(0xFFDC2626)) }
+        item { SummaryCard("Candidatas", data.summary.candidates.toString(), Color(0xFFF97316)) }
         item { SummaryCard("RX atenção", data.summary.rxAttentionCount.toString(), Color(0xFF7C3AED)) }
-        item { SummaryCard("OLTs ativas", data.summary.activeOlts.toString(), Color(0xFF0F766E)) }
+        item { SummaryCard("OLTs ativas", data.summary.activeOlts.toString(), Color(0xFF06B6D4)) }
     }
 }
 
@@ -243,17 +267,21 @@ private fun SummaryCard(
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = background),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(22.dp),
         modifier = Modifier
-            .width(220.dp)
-            .height(120.dp)
+            .width(245.dp)
+            .height(128.dp)
             .focusable()
     ) {
         Column(
             modifier = Modifier.padding(18.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = label, color = Color(0xFFE2E8F0))
+            Text(
+                text = label,
+                color = Color.White.copy(alpha = 0.95f),
+                fontWeight = FontWeight.Bold
+            )
             Text(
                 text = value,
                 style = MaterialTheme.typography.headlineLarge,
@@ -270,7 +298,7 @@ private fun SectionTitle(title: String) {
         text = title,
         style = MaterialTheme.typography.headlineSmall,
         color = Color.White,
-        fontWeight = FontWeight.Bold
+        fontWeight = FontWeight.Black
     )
 }
 
@@ -281,7 +309,7 @@ private fun RxSection(items: List<RxItem>) {
         return
     }
 
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         items(items) { item ->
             RxCard(item)
         }
@@ -291,25 +319,26 @@ private fun RxSection(items: List<RxItem>) {
 @Composable
 private fun RxCard(item: RxItem) {
     val bg = when (item.rxStatus.lowercase()) {
-        "critical" -> Color(0xFF5B1E1E)
-        "warning" -> Color(0xFF5A3A12)
+        "critical" -> Color(0xFF7F1D1D)
+        "warning" -> Color(0xFF9A3412)
         else -> Color(0xFF1E293B)
     }
 
     Card(
         colors = CardDefaults.cardColors(containerColor = bg),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         modifier = Modifier
-            .width(320.dp)
+            .width(365.dp)
             .focusable()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(18.dp)) {
             Text(
                 text = item.clientName.ifBlank { "Sem nome" },
                 color = Color.White,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Black,
+                style = MaterialTheme.typography.titleLarge
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "RX: ${item.rxPower ?: "--"} dBm",
                 color = Color.White,
@@ -317,10 +346,14 @@ private fun RxCard(item: RxItem) {
                 fontWeight = FontWeight.Black
             )
             Spacer(modifier = Modifier.height(6.dp))
-            Text("Status RX: ${item.rxLabel}", color = Color(0xFFFFE7C2))
-            Text("OLT: ${item.oltName}", color = Color(0xFFCBD5E1))
-            Text("PON: ${item.pon} • ONU: ${item.onuId}", color = Color(0xFFCBD5E1))
-            Text("MAC: ${item.mac.ifBlank { "não informado" }}", color = Color(0xFFDDD6FE))
+            StatusBadge(
+                text = "Status RX: ${item.rxLabel}",
+                background = if (item.rxStatus.lowercase() == "critical") Color(0xFFB91C1C) else Color(0xFFEA580C)
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text("OLT: ${item.oltName}", color = Color(0xFFF1F5F9))
+            Text("PON: ${item.pon} • ONU: ${item.onuId}", color = Color(0xFFF1F5F9))
+            Text("MAC: ${item.mac.ifBlank { "não informado" }}", color = Color(0xFFE9D5FF))
         }
     }
 }
@@ -332,8 +365,8 @@ private fun EventsSection(items: List<LatestEvent>) {
         return
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        items.forEach { item ->
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        items.take(6).forEach { item ->
             EventCard(item)
         }
     }
@@ -342,32 +375,47 @@ private fun EventsSection(items: List<LatestEvent>) {
 @Composable
 private fun EventCard(item: LatestEvent) {
     val statusColor = if (item.status.equals("Down", ignoreCase = true)) {
-        Color(0xFF7F1D1D)
+        Color(0xFFDC2626)
     } else {
-        Color(0xFF14532D)
+        Color(0xFF16A34A)
     }
 
     Card(
         colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         modifier = Modifier
             .fillMaxWidth()
             .focusable()
-            .border(1.dp, statusColor, RoundedCornerShape(18.dp))
+            .border(1.5.dp, statusColor, RoundedCornerShape(20.dp))
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = item.clientName.ifBlank { "Sem nome" },
-                color = Color.White,
-                fontWeight = FontWeight.Bold
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.clientName.ifBlank { "Sem nome" },
+                    color = Color.White,
+                    fontWeight = FontWeight.Black,
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("OLT: ${item.oltName}", color = Color(0xFFCBD5E1))
+                Text("PON: ${item.pon} • ONU: ${item.onuId}", color = Color(0xFFCBD5E1))
+                Text("MAC: ${item.mac.ifBlank { "não informado" }}", color = Color(0xFFE9D5FF))
+                Text("RX: ${item.rxPower?.toString() ?: "não informado"} dBm", color = Color(0xFFBFD8FF))
+                Text("Atualizado: ${item.updatedAt}", color = Color(0xFF94A3B8))
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            StatusBadge(
+                text = item.status.ifBlank { "N/A" },
+                background = statusColor
             )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text("Status: ${item.status}", color = Color(0xFFE2E8F0))
-            Text("OLT: ${item.oltName}", color = Color(0xFFCBD5E1))
-            Text("PON: ${item.pon} • ONU: ${item.onuId}", color = Color(0xFFCBD5E1))
-            Text("MAC: ${item.mac.ifBlank { "não informado" }}", color = Color(0xFFDDD6FE))
-            Text("RX: ${item.rxPower?.toString() ?: "não informado"} dBm", color = Color(0xFFBFD8FF))
-            Text("Atualizado: ${item.updatedAt}", color = Color(0xFF94A3B8))
         }
     }
 }
@@ -417,7 +465,7 @@ private fun CandidatesSection(items: List<CandidateItem>) {
             EmptyInline("Nenhuma candidata à remoção.")
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items.forEach { item ->
+                items.take(6).forEach { item ->
                     SimpleItemCard(
                         title = item.clientName.ifBlank { "Sem nome" },
                         lines = listOf(
@@ -439,7 +487,7 @@ private fun LastDownSection(items: List<LastDownItem>) {
             EmptyInline("Nenhuma ONU offline.")
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items.take(8).forEach { item ->
+                items.take(6).forEach { item ->
                     SimpleItemCard(
                         title = item.clientName.ifBlank { "Sem nome" },
                         lines = listOf(
@@ -453,6 +501,15 @@ private fun LastDownSection(items: List<LastDownItem>) {
             }
         }
     }
+}
+
+@Composable
+private fun FooterSection(lastUpdateLabel: String) {
+    Text(
+        text = "OLT TV Monitor • Atualização automática • Última sincronização: $lastUpdateLabel",
+        color = Color(0xFF94A3B8),
+        fontWeight = FontWeight.Bold
+    )
 }
 
 @Composable
@@ -470,7 +527,7 @@ private fun SectionPanel(
                 text = title,
                 color = Color.White,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Black
             )
             Spacer(modifier = Modifier.height(14.dp))
             content()
@@ -519,7 +576,7 @@ private fun SimpleItemCard(
             .focusable()
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Text(title, color = Color.White, fontWeight = FontWeight.Bold)
+            Text(title, color = Color.White, fontWeight = FontWeight.Black)
             Spacer(modifier = Modifier.height(6.dp))
             lines.forEach { line ->
                 Text(line, color = Color(0xFFCBD5E1))
@@ -558,10 +615,28 @@ private fun AlertCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
-            Text(title, color = Color.White, fontWeight = FontWeight.Bold)
+            Text(title, color = Color.White, fontWeight = FontWeight.Black)
             Spacer(modifier = Modifier.height(6.dp))
             Text(message, color = Color(0xFFF8FAFC))
         }
+    }
+}
+
+@Composable
+private fun StatusBadge(
+    text: String,
+    background: Color
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = background),
+        shape = RoundedCornerShape(999.dp)
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            color = Color.White,
+            fontWeight = FontWeight.Black
+        )
     }
 }
 
